@@ -1,0 +1,37 @@
+name: student_life_companion
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  shared_preferences: ^2.5.5
+  google_generative_ai: ^0.4.7
+  http: ^1.6.0
+  fl_chart: ^1.2.0
+  alarm: ^5.2.1
+  flutter_local_notifications: ^17.1.2
+  usage_stats: ^1.1.0
+  permission_handler: ^12.0.1
+  flutter_background_service: ^5.0.5
+  installed_apps: ^2.1.1
+  system_alert_window: ^2.0.0
+  android_intent_plus: ^4.0.3
+  url_launcher: ^6.1.7
+  app_usage: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/alarm.mp3
