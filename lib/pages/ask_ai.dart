@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AskAIHelperPage extends StatefulWidget {
   const AskAIHelperPage({super.key});
@@ -14,7 +15,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, String>> _currentMessages = []; 
   Map<String, List<Map<String, String>>> _allSavedChats = {}; 
-  List<String> _pinnedChats = []; // ಪಿನ್ ಆಗಿರೋ ಚಾಟ್‌ಗಳ ಲಿಸ್ಟ್
+  List<String> _pinnedChats = []; 
   String? _currentChatId; 
   bool _isLoading = false;
   
@@ -193,6 +194,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
     try {
       _chatSession ??= _model.startChat();
       final response = await _chatSession!.sendMessage(Content.text(userText));
+      final botResponse = response.text ?? "No response received.";
       
       setState(() { 
         _currentMessages.add({
@@ -387,4 +389,21 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
       ),
     );
   }
+  Future<void> _saveAiChatToFirestore(String userPrompt, String aiResponse) async {
+  try {
+    final firestore = FirebaseFirestore.instance;
+    
+    // Automatically creates 'ai_chats' collection in Firebase and stores data
+    await firestore.collection('ai_chats').add({
+      'student_name': 'Prajna',
+      'user_prompt': userPrompt,
+      'ai_response': aiResponse,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+    
+    print("AI Chat data saved successfully to Firebase! 🔥");
+  } catch (e) {
+    print("Error saving AI chat to Firestore: $e");
+  }
+}
 }

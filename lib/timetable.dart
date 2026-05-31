@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TimetablePage extends StatefulWidget {
   const TimetablePage({super.key});
@@ -147,4 +148,22 @@ class _TimetablePageState extends State<TimetablePage> {
       ),
     );
   }
+  Future<void> _saveTimetableToFirestore(String subject, String time, String room) async {
+  try {
+    final firestore = FirebaseFirestore.instance;
+    
+    // Automatically creates 'timetable' collection and adds data
+    await firestore.collection('timetable').add({
+      'student_name': 'Prajna',
+      'subject': subject,
+      'time': time,
+      'room_or_link': room,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+    
+     print("Timetable data saved successfully to Firebase! 🔥");
+  } catch (e) {
+     print("Error saving timetable to Firestore: $e");
+  }
+}
 }

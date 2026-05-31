@@ -10,9 +10,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'focus_mode.dart'; 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); 
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); 
   await Alarm.init(); 
   
   runApp(const MaterialApp(

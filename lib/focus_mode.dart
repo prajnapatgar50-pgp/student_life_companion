@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
-import 'main.dart'; // ಇಂಪೋರ್ಟ್ ಇಲ್ಲೇ ಆಡ್ ಮಾಡಿದ್ದೀನಿ ಅಕ್ಕ
+import 'main.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FocusModePage extends StatefulWidget {
   final VoidCallback? onExitFocus; 
@@ -196,6 +197,7 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
 
   void _exitFocusRoutine() async {
     _focusDurationTimer?.cancel();
+    await _saveDataToFirestore(_totalFocusSeconds);
    await _stopLockTask(); 
     if (widget.onExitFocus != null) {
       widget.onExitFocus!(); 
@@ -204,7 +206,7 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
         _isFocusActive = false;
       });
     }
-    await SystemChannels.platform.invokeMethod('SystemNavigator.pop'); // ಫೋನ್ ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ಗೆ ಹೋಗಲು
+    await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
     }
   
 
@@ -432,4 +434,21 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
       ),
     );
   }
+  Future<void> _saveDataToFirestore(int totalSeconds) async {
+  if (totalSeconds < 1) return; 
+
+  try {
+    final firestore = FirebaseFirestore.instance;
+    await firestore.collection('study_hours').add({
+      'student_name': 'Prajna', 
+      'duration_seconds': totalSeconds,
+      'duration_minutes': (totalSeconds / 60).toStringAsFixed(2),
+      'completed_at': DateTime.now().toIso8601String(),
+    });
+    
+    print("data saved successfully to firebase firestore 🔥");
+  } catch (e) {
+    print("error saving data to firestore: $e");
+  }
+}
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StudyTrackerPage extends StatefulWidget {
   const StudyTrackerPage({super.key});
@@ -19,22 +20,48 @@ class _StudyTrackerPageState extends State<StudyTrackerPage> {
   }
 
   Future<void> _getSavedHours() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String>? storedHours = prefs.getStringList('weekly_study_hours');
-    if (storedHours != null) {
-      List<double> mainHours = storedHours.map((h) => double.parse(h)).toList();
+    try {
+      final firestore = FirebaseFirestore.instance;
       
+      // Fetches study hours data directly from Firebase Firestore
+      final snapshot = await firestore
+          .collection('study_hours')
+          .where('student_name', isEqualTo: 'Prajna')
+          .get();
+
+      List<double> firebaseWeeklyHours = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['completed_at'] != null && data['duration_seconds'] != null) {
+          DateTime completedDate = DateTime.parse(data['completed_at']);
+          int seconds = data['duration_seconds'] as int;
+          double hours = seconds / 3600; // Converts seconds to hours for graph
+
+          // Find the weekday index (Sun=0, Mon=1, ..., Sat=6)
+          int graphIndex = (completedDate.weekday == 7) ? 0 : completedDate.weekday;
+          
+          // Sum up the hours for that specific day
+          firebaseWeeklyHours[graphIndex] += hours;
+        }
+      }
+
       setState(() {
-        weeklyData = [
-          mainHours[0], // Sun
-          mainHours[1], // Mon
-          mainHours[2], // Tue
-          mainHours[3], // Wed
-          mainHours[4], // Thu
-          mainHours[5], // Fri
-          mainHours[6], // Sat
-        ];
+        weeklyData = firebaseWeeklyHours;
       });
+      
+      print("Weekly study tracker data synced from Firebase successfully! 📊");
+    } catch (e) {
+      print("Error fetching study tracker data from Firestore: $e");
+      
+      // Fallback to local memory if internet or Firebase fails
+      final prefs = await SharedPreferences.getInstance();
+      List<String>? storedHours = prefs.getStringList('weekly_study_hours');
+      if (storedHours != null) {
+        setState(() {
+          weeklyData = storedHours.map((h) => double.parse(h)).toList();
+        });
+      }
     }
   }
 
@@ -81,7 +108,7 @@ class _StudyTrackerPageState extends State<StudyTrackerPage> {
               height: 300, 
               child: BarChart(
                 BarChartData(
-                  maxY: 8, 
+                  maxY: weeklyData.reduce((a, b) => a > b ? a : b) > 8 ? weeklyData.reduce((a, b) => a > b ? a : b) + 2 : 8,
                   barTouchData: BarTouchData(enabled: false),
                   gridData: FlGridData(
                     show: true,

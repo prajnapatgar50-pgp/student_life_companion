@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StudyTasksPage extends StatefulWidget {
   const StudyTasksPage({super.key});
@@ -160,13 +161,13 @@ class _StudyTasksPageState extends State<StudyTasksPage> {
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_controller.text.isNotEmpty) {
+                    String dateStr = _selectedSubmitDate != null 
+                        ? _selectedSubmitDate!.toIso8601String() 
+                        : DateTime.now().toIso8601String();
+                        await _saveTaskToFirestore(_controller.text, dateStr); // Save to Firestore
                     setState(() {
-                      String dateStr = _selectedSubmitDate != null 
-                          ? _selectedSubmitDate!.toIso8601String() 
-                          : DateTime.now().toIso8601String();
-
                       _tasks.add({
                         "title": _controller.text, 
                         "isDone": false,
@@ -186,4 +187,22 @@ class _StudyTasksPageState extends State<StudyTasksPage> {
       ),
     );
   }
+  Future<void> _saveTaskToFirestore(String title, String submitDate) async {
+  try {
+    final firestore = FirebaseFirestore.instance;
+    
+    // Automatically creates 'study_tasks' collection in Firebase and adds data
+    await firestore.collection('study_tasks').add({
+      'student_name': 'Prajna',
+      'task_title': title,
+      'submit_date': submitDate,
+      'is_completed': false,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+    
+    print("Task saved successfully to Firebase Firestore! 🔥");
+  } catch (e) {
+    print("Error saving task to Firestore: $e");
+  }
+}
 }
