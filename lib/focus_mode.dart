@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import 'main.dart'; // ಇಂಪೋರ್ಟ್ ಇಲ್ಲೇ ಆಡ್ ಮಾಡಿದ್ದೀನಿ ಅಕ್ಕ
 
 class FocusModePage extends StatefulWidget {
   final VoidCallback? onExitFocus; 
@@ -26,6 +27,7 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
   bool _cameFromAllowedApp = false;
 
   final List<Map<String, dynamic>> _allowedApps = [
+    {'name': 'Student Life', 'icon': Icons.school, 'url': 'app://student_life'}, 
     {'name': 'Calculator', 'icon': Icons.calculate, 'url': 'https://www.google.com/search?q=calculator'},
     {'name': 'ChatGPT', 'icon': Icons.psychology, 'url': 'https://chatgpt.com'},
     {'name': 'Google', 'icon': Icons.search, 'url': 'https://www.google.com'},
@@ -60,7 +62,8 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
     WidgetsBinding.instance.addObserver(this);
     _loadSavedTimes();
     
-    _timeCheckTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    // ಸೌಂಡ್ ಬರದೇ ಇರಲು ಟೈಮರ್ ಅನ್ನು 3 ಸೆಕೆಂಡ್ ಬದಲು 5 ಸೆಕೆಂಡಿಗೆ ಇಟ್ಟಿದ್ದೀನಿ
+    _timeCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _checkTimeAndActivate();
     });
   }
@@ -87,24 +90,32 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
     }
   }
 
+  // ಪಕ್ಕಾ ಟೈಮ್ ಕಂಪ್ಯಾರಿಸನ್ ಮತ್ತು ಅಲಾರ್ಮ್ ಸೌಂಡ್ ಫಿಕ್ಸ್ ಮಾಡಿರೋ ಲಾಜಿಕ್ ಇಲ್ಲಿದೆ ಅಕ್ಕ:
   void _checkTimeAndActivate() {
     if (_startTime == null || _endTime == null) return;
 
     final now = DateTime.now();
-    final currentMinutes = (now.hour * 60) + now.minute;
     
-    final startMinutes = (_startTime!.hour * 60) + _startTime!.minute;
-    final endMinutes = (_endTime!.hour * 60) + _endTime!.minute;
+    // ಇವತ್ತಿನ ದಿನಾಂಕಕ್ಕೆ ಸಮಯವನ್ನು ಮ್ಯಾಚ್ ಮಾಡುವುದು
+    final startDateTime = DateTime(now.year, now.month, now.day, _startTime!.hour, _startTime!.minute);
+    var endDateTime = DateTime(now.year, now.month, now.day, _endTime!.hour, _endTime!.minute);
 
-    if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+    // ಒಂದು ವೇಳೆ ಎಂಡ್ ಟೈಮ್ ಮರುದಿನಕ್ಕೆ ಹೋಗಿದ್ದರೆ (ಉದಾಹರಣೆಗೆ 00:29)
+    if (endDateTime.isBefore(startDateTime)) {
+      endDateTime = endDateTime.add(const Duration(days: 1));
+    }
+
+    // ಈಗಿನ ಸಮಯವು ಇವೆರಡರ ಮಧ್ಯೆ ಇದೆಯಾ ಚೆಕ್ ಮಾಡುವುದು
+    if (now.isAfter(startDateTime) && now.isBefore(endDateTime)) {
       if (!_isFocusActive) {
         setState(() {
           _isFocusActive = true;
           _totalFocusSeconds = 0;
         });
-        _startFocusDurationCounting();
+        _startFocusDurationCounting(); 
       }
     } else {
+      // ಫೋಕಸ್ ಮೋಡ್ ಸಮಯ ಮುಗಿದಿದ್ದರೆ ಮಾತ್ರ ಎಕ್ಸಿಟ್ ಮಾಡು
       if (_isFocusActive) {
         _exitFocusRoutine();
       }
@@ -112,7 +123,7 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
   }
 
   void _startFocusDurationCounting() {
-    _startLockTask(); 
+    _startLockTask(); // ಕೇವಲ ಒಂದು ಬಾರಿ ಮಾತ್ರ ಲಾಕ್ ಟಾಸ್ಕ್ ರನ್ ಆಗುತ್ತೆ, ಸೌಂಡ್ ಬರಲ್ಲ!
     _focusDurationTimer?.cancel();
     _focusDurationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -152,6 +163,24 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
 
   Future<void> _launchAllowedApp(String urlString) async {
     if (urlString == 'app://student_life') {
+      await _stopLockTask(); 
+      
+      if (mounted) {
+        setState(() {
+          _cameFromAllowedApp = true; 
+        });
+        
+        // ನಿನ್ನ ಫೋಟೋದಲ್ಲಿ ನೋಡಿದ `DashboardPage` ಹೆಸರನ್ನು ಇಲ್ಲಿ ಪಕ್ಕಾ ಹಾಕಿದ್ದೀನಿ ಅಕ್ಕ 🎓
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardPage()), 
+        );
+        
+        _startLockTask(); 
+        setState(() {
+          _cameFromAllowedApp = false;
+        });
+      }
       return;
     }
     
@@ -165,9 +194,9 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
     }
   }
 
-  void _exitFocusRoutine() {
+  void _exitFocusRoutine() async {
     _focusDurationTimer?.cancel();
-    _stopLockTask(); 
+   await _stopLockTask(); 
     if (widget.onExitFocus != null) {
       widget.onExitFocus!(); 
     } else {
@@ -175,7 +204,10 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
         _isFocusActive = false;
       });
     }
-  }
+    await SystemChannels.platform.invokeMethod('SystemNavigator.pop'); // ಫೋನ್ ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ಗೆ ಹೋಗಲು
+    }
+  
+
 
   Future<void> _selectTime(bool isStart) async {
     final TimeOfDay? picked = await showTimePicker(
@@ -193,6 +225,8 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
           prefs.setString('focus_end_time', '${picked.hour}:${picked.minute}');
         }
       });
+      // ಸಮಯ ಸೆಟ್ ಮಾಡಿದ ತಕ್ಷಣ ಇಲ್ಲೇ ಒಂದು ಬಾರಿ ರನ್ ಮಾಡಿ ಸ್ಕ್ರೀನ್ ಆನ್ ಮಾಡುತ್ತದೆ
+      _checkTimeAndActivate();
     }
   }
 
@@ -209,7 +243,6 @@ class _FocusModePageState extends State<FocusModePage> with WidgetsBindingObserv
       canPop: !_isFocusActive, 
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && _isFocusActive) {
-          // ಅಕ್ಕ, ನೀನು ಕೇಳಿದ ಮೆಸೇಜ್ ಇಲ್ಲಿದೆ:
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Are you sure you want to exit Focus Mode?,please use the Exit button below! 🚪"),
