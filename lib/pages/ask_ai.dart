@@ -38,7 +38,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
     _loadAllChatsFromMemory(); 
   }
 
-  // 1. ಮೆಮೊರಿಯಿಂದ ಎಲ್ಲಾ ಡೇಟಾ ಲೋಡ್ ಮಾಡುವುದು (ಚಾಟ್ಸ್ ಮತ್ತು ಪಿನ್ ಲಿಸ್ಟ್)
+  // 1. loading all data from memory (chats and pin lists)
   Future<void> _loadAllChatsFromMemory() async {
     final prefs = await SharedPreferences.getInstance();
     final String? savedChatsString = prefs.getString('all_gemini_chats');
@@ -78,7 +78,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
     });
   }
 
-  // 2. ಮೆಮೊರಿಗೆ ಡೇಟಾ ಸೇವ್ ಮಾಡುವುದು
+  // 2. storing data in memory
   Future<void> _saveAllToMemory() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('all_gemini_chats', jsonEncode(_allSavedChats));
@@ -104,7 +104,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
     Navigator.pop(context); 
   }
 
-  // 3. ಒಂದು ನಿರ್ದಿಷ್ಟ ಚಾಟ್ ಡಿಲೀಟ್ ಮಾಡಲು ಡೈಲಾಗ್ (ಲಾಂಗ್ ಪ್ರೆಸ್ ಆಪ್ಷನ್)
+  // 3. how to delete this specific chat (long press option)
   void _showManageChatDialog(String chatId) {
     bool isPinned = _pinnedChats.contains(chatId);
     
@@ -114,7 +114,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
         title: Text(chatId, maxLines: 1, overflow: TextOverflow.ellipsis),
         content: const Text("Choose an action for this chat:"),
         actions: [
-          // ಪಿನ್ / ಅನ್‌ಪಿನ್ ಬಟನ್
+          // pin / onpin button
           TextButton(
             onPressed: () {
               setState(() {
@@ -129,7 +129,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
             },
             child: Text(isPinned ? "Unpin Chat 📌" : "Pin Chat 📌", style: const TextStyle(color: Colors.blue)),
           ),
-          // ಡಿಲೀಟ್ ಬಟನ್
+          // delete button
           TextButton(
             onPressed: () {
               setState(() {
@@ -216,10 +216,9 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
 
   @override
   Widget build(BuildContext context) {
-    // --- ಆರ್ಡರ್ ಲಾಜಿಕ್: ಮೊದಲು ಸರ್ಚ್ ಮಾಡಿದ್ದು ಕೆಳಗೆ ಹೋಗಲು ಮತ್ತು ಪಿನ್ ಆದದ್ದು ಮೇಲೆ ಬರಲು ---
-    List<String> sortedKeys = _allSavedChats.keys.toList().reversed.toList(); // ಹೊಸದು ಮೇಲೆ, ಹಳೆಯದು ಕೆಳಗೆ
+    // --- pinned chats will appear at the top.searched or older chats move to the button ---
+    List<String> sortedKeys = _allSavedChats.keys.toList().reversed.toList(); 
     
-    // ಪಿನ್ ಆಗಿರೋ ಚಾಟ್‌ಗಳನ್ನು ಸಪರೇಟ್ ಮಾಡಿ ಲಿಸ್ಟ್‌ನ ಅತ್ಯಂತ ಮೇಲ್ಭಾಗಕ್ಕೆ ತರುವುದು
     List<String> pinnedList = sortedKeys.where((key) => _pinnedChats.contains(key)).toList();
     List<String> unpinnedList = sortedKeys.where((key) => !_pinnedChats.contains(key)).toList();
     List<String> finalDisplayList = [...pinnedList, ...unpinnedList];
@@ -301,7 +300,7 @@ class _AskAIHelperPageState extends State<AskAIHelperPage> {
                             ),
                           ),
                           onTap: () => _loadSpecificChat(keyId),
-                          // --- ಇಲ್ಲಿ ಲಾಂಗ್ ಪ್ರೆಸ್ ಲಾಜಿಕ್ ಆಡ್ ಮಾಡಲಾಗಿದೆ ---
+                          // --- long press logic has been added here ---
                           onLongPress: () => _showManageChatDialog(keyId), 
                         );
                       },
