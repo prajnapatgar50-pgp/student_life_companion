@@ -604,7 +604,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 }
 
-// --- 4. ಕೆರಿಯರ್ ಪೇಜ್ (CAREER PAGE) ---
+// --- 4. (CAREER PAGE) ---
 class CareerPage extends StatelessWidget {
   const CareerPage({super.key});
 
